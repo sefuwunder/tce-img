@@ -17,7 +17,7 @@ echo "[+] Setting up automated security services for The Coding Exec Workstation
 # -------------------------------------------------------------------
 echo "[+] Configuring daily ClamAV scan for Downloads directory..."
 
-cat << 'EOF' > /etc/systemd/system/clamav-downloads-scan.service
+cat << 'UNIT_EOF' > /etc/systemd/system/clamav-downloads-scan.service
 [Unit]
 Description=Low-priority ClamAV Scan of User Downloads
 After=network.target
@@ -26,10 +26,11 @@ After=network.target
 Type=oneshot
 Nice=19
 IOSchedulingClass=idle
-ExecStart=/usr/bin/clamscan -r --no-summary --infected /home/* /Downloads
-EOF
+# sh -c wrapper: systemd does not expand globs in ExecStart itself
+ExecStart=/bin/sh -c 'exec /usr/bin/clamscan -r --no-summary --infected /home/*/Downloads'
+UNIT_EOF
 
-cat << 'EOF' > /etc/systemd/system/clamav-downloads-scan.timer
+cat << 'UNIT_EOF' > /etc/systemd/system/clamav-downloads-scan.timer
 [Unit]
 Description=Run ClamAV Downloads Scan Daily
 
@@ -40,14 +41,14 @@ RandomizedDelaySec=1h
 
 [Install]
 WantedBy=timers.target
-EOF
+UNIT_EOF
 
 # -------------------------------------------------------------------
 # 2. Rkhunter: Weekly Rootkit Check
 # -------------------------------------------------------------------
 echo "[+] Configuring weekly Rkhunter audit..."
 
-cat << 'EOF' > /etc/systemd/system/rkhunter-audit.service
+cat << 'UNIT_EOF' > /etc/systemd/system/rkhunter-audit.service
 [Unit]
 Description=Weekly Rootkit Hunter System Check
 After=network.target
@@ -57,9 +58,9 @@ Type=oneshot
 Nice=19
 IOSchedulingClass=idle
 ExecStart=/usr/bin/rkhunter --check --cronjob --report-warnings-only
-EOF
+UNIT_EOF
 
-cat << 'EOF' > /etc/systemd/system/rkhunter-audit.timer
+cat << 'UNIT_EOF' > /etc/systemd/system/rkhunter-audit.timer
 [Unit]
 Description=Run Rkhunter Weekly
 
@@ -70,14 +71,14 @@ RandomizedDelaySec=2h
 
 [Install]
 WantedBy=timers.target
-EOF
+UNIT_EOF
 
 # -------------------------------------------------------------------
 # 3. Lynis: Monthly Hardening Audit
 # -------------------------------------------------------------------
 echo "[+] Configuring monthly Lynis hardening audit..."
 
-cat << 'EOF' > /etc/systemd/system/lynis-audit.service
+cat << 'UNIT_EOF' > /etc/systemd/system/lynis-audit.service
 [Unit]
 Description=Monthly Lynis Security Audit
 After=network.target
@@ -87,9 +88,9 @@ Type=oneshot
 Nice=19
 IOSchedulingClass=idle
 ExecStart=/usr/bin/lynis audit system --quiet --cronjob
-EOF
+UNIT_EOF
 
-cat << 'EOF' > /etc/systemd/system/lynis-audit.timer
+cat << 'UNIT_EOF' > /etc/systemd/system/lynis-audit.timer
 [Unit]
 Description=Run Lynis System Audit Monthly
 
@@ -100,7 +101,7 @@ RandomizedDelaySec=4h
 
 [Install]
 WantedBy=timers.target
-EOF
+UNIT_EOF
 
 # -------------------------------------------------------------------
 # 4. Enable & Start Systemd Timers
