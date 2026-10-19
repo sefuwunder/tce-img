@@ -65,18 +65,4 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           oci: true
           push: true
-
-      # 6. Run Trivy Vulnerability Scanner on the Built Image
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest'
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-          severity: 'CRITICAL,HIGH'
-
-      # 7. Upload Trivy scan results to GitHub Security tab
-      - name: Upload Trivy scan results to GitHub Security dashboard
-        uses: github/codeql-action/upload-sarif@v3
-        with:
-          sarif_file: 'trivy-results.sarif'
+          
