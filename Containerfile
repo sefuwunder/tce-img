@@ -1,6 +1,10 @@
 # Containerfile - The Coding Exec Ubuntu Workstation
 FROM ghcr.io/bootcrew/ubuntu-bootc:latest
 
+# Build as root: the base image defaults to a non-root user,
+# but apt/dpkg/systemctl need root.
+USER root
+
 # 1. Base Workstation, Hardware, AppImages, GOA, Security, & Dev Tooling
 RUN mkdir -p /var/lib/apt/lists/partial && apt-get update && apt-get install -y --no-install-recommends \
     ubuntu-desktop-minimal \
