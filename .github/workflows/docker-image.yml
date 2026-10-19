@@ -2,7 +2,8 @@ name: Build and Publish Bootc Workstation Image
 
 on:
   push:
-  branches: [ "main" ]
+    branches: 
+      - main
   paths:
     - 'Containerfile'
     - '.github/workflows/**'
