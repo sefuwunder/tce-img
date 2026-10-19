@@ -10,7 +10,7 @@ FROM docker.io/library/ubuntu:questing AS bootc-builder
 ENV CARGO_HOME=/tmp/rust RUSTUP_HOME=/tmp/rust
 RUN apt-get update && apt-get install -y --no-install-recommends \
         git curl make build-essential go-md2man \
-        libzstd-dev libselinux-dev pkgconf libostree-dev ostree ca-certificates \
+        libzstd-dev libselinux-dev libclang-dev pkgconf libostree-dev ostree ca-certificates \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- --profile minimal -y
 WORKDIR /home/build
