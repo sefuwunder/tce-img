@@ -2,11 +2,11 @@ name: Build and Publish Bootc Workstation Image
 
 on:
   push:
-    branches: 
+    branches:
       - main
-  paths:
-    - 'Containerfile'
-    - '.github/workflows/**'
+    paths:
+      - 'Containerfile'
+      - '.github/workflows/**'
   schedule:
     - cron: '0 2 * * *' # Runs automatically every night at 2:00 AM UTC
   workflow_dispatch:      # Allows manual trigger from the GitHub Actions tab
