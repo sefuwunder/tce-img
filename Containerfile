@@ -55,7 +55,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     upower \
     acpi \
     linux-firmware \
-    wireless-tools \
+    iw \
     wpasupplicant \
     libfuse2t64 \
     fuse3 \
