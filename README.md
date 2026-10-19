@@ -31,7 +31,8 @@ The numbered scripts are a full migration path: export → install → restore �
 sudo ./01-export-executive-state.sh
 
 # 2. Install the image onto this machine (replaces the current root)
-sudo ./02-provision-bootc.sh ghcr.io/sefuwunder/tce-img:latest
+#    (defaults to ghcr.io/sefuwunder/tce-img:latest; pass another ref to override)
+sudo ./02-provision-bootc.sh
 
 # 3. Reboot into the bootc environment, then restore your state:
 #    home dir, credentials, Wi-Fi/VPN profiles, executive flatpaks
@@ -41,11 +42,6 @@ sudo ./02-provision-bootc.sh ghcr.io/sefuwunder/tce-img:latest
 # 4. Enable background security auditing
 sudo ./04-setup-user-security-services.sh
 ```
-
-> **Note:** `02-provision-bootc.sh` still defaults to the old
-> `quay.io/codingexec/ubuntu-workstation:latest` reference — pass the
-> `ghcr.io/sefuwunder/tce-img:latest` argument explicitly (as above) until the
-> script default is updated.
 
 Security timers installed by step 4:
 
