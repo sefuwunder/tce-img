@@ -1,0 +1,79 @@
+name: Build and Publish Bootc Workstation Image
+
+on:
+  push:
+  branches: [ "main" ]
+  paths:
+    - 'Containerfile'
+    - '.github/workflows/**'
+  schedule:
+    - cron: '0 2 * * *' # Runs automatically every night at 2:00 AM UTC
+  workflow_dispatch:      # Allows manual trigger from the GitHub Actions tab
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+
+    steps:
+      # 1. Checkout repository
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      # 2. Set up Podman (or Docker) environment
+      - name: Set up Podman
+        uses: smartgit/setup-podman@v3
+        with:
+          container-tools: true
+
+      # 3. Log in to GitHub Container Registry (GHCR)
+      - name: Log in to the Container Registry
+        uses: redhat-actions/podman-login@v1
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 4. Extract metadata (tags, labels) for the image
+      - name: Extract Metadata (Tags, Labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=sha,prefix=sha-
+
+      # 5. Build and Push the Bootc Image using Podman
+      - name: Build and Push Container Image
+        uses: redhat-actions/buildah-build@v2
+        with:
+          containerfiles: |
+            Containerfile
+          image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          oci: true
+          push: true
+
+      # 6. Run Trivy Vulnerability Scanner on the Built Image
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: '${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+
+      # 7. Upload Trivy scan results to GitHub Security tab
+      - name: Upload Trivy scan results to GitHub Security dashboard
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: 'trivy-results.sarif'
