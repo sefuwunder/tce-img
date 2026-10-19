@@ -28,11 +28,13 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # 2. Set up Podman environment
-      - name: Set up Podman
-        uses: smartgit/setup-podman@v3
-        with:
-          container-tools: true
+     # 2. Install Podman + Buildah
+     - name: Install Podman and Buildah
+       run: |
+          sudo apt-get update
+          sudo apt-get install -y podman buildah
+          podman --version
+          buildah --version
 
       # 3. Log in to GitHub Container Registry (GHCR)
       - name: Log in to the Container Registry
