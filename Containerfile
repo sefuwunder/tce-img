@@ -2,7 +2,7 @@
 FROM ghcr.io/bootcrew/ubuntu-bootc:latest
 
 # 1. Base Workstation, Hardware, AppImages, GOA, Security, & Dev Tooling
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN mkdir -p /var/lib/apt/lists/partial && apt-get update && apt-get install -y --no-install-recommends \
     ubuntu-desktop-minimal \
     flatpak \
     podman \
