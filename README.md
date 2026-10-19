@@ -43,6 +43,21 @@ sudo ./02-provision-bootc.sh
 sudo ./04-setup-user-security-services.sh
 ```
 
+## Bare-metal install (ISO)
+
+Every push to `main` (and manual workflow runs) also builds a bootable installer
+ISO with bootc-image-builder (`bootc-generic-iso`), from the just-pushed image.
+Download it from the workflow run's artifacts (`tce-workstation-installer-iso`),
+flash it to a USB stick, and boot.
+
+The ISO boots a live environment. From a terminal there, install to disk:
+
+```bash
+sudo bootc install to-disk /dev/sdX   # replace sdX with the target disk
+```
+
+then reboot. The ISO is skipped on the nightly scheduled build.
+
 Security timers installed by step 4:
 
 | Timer | Cadence |
@@ -67,7 +82,7 @@ sudo bootc switch ghcr.io/sefuwunder/tce-img:sha-<commit>  # pin / roll back
 - nightly at 02:00 UTC
 - manually via **Actions → Run workflow**
 
-Each build is Trivy-scanned (`CRITICAL,HIGH`) and results upload to the Security tab.
+Each build is linted with `bootc container lint` before pushing.
 
 ### Repo layout
 
