@@ -54,8 +54,9 @@ jobs:
             type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
             type=sha,prefix=sha-
 
-      # 5. Build and Push the Bootc Image using Podman
-      - name: Build and Push Container Image
+      # 5. Build the Bootc Image with Buildah
+      #    (note: buildah-build has no `push` input — pushing is step 7)
+      - name: Build Container Image
         uses: redhat-actions/buildah-build@v2
         with:
           containerfiles: |
@@ -64,5 +65,19 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
           oci: true
-          push: true
-          
+
+      # 6. Validate the image is a bootable bootc container
+      - name: Lint bootc image
+        run: |
+          podman run --rm --privileged \
+            -v /var/lib/containers:/var/lib/containers \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            bootc container lint
+
+      # 7. Tag and push all tags to GHCR
+      - name: Push Container Image
+        run: |
+          for tag in ${{ steps.meta.outputs.tags }}; do
+            podman tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest "$tag"
+            podman push "$tag"
+          done
