@@ -1,5 +1,5 @@
 # Containerfile - The Coding Exec Ubuntu Workstation
-FROM ghcr.io/ublue-os/ubuntu-bootc:latest
+FROM ghcr.io/bootcrew/ubuntu-bootc:latest
 
 # 1. Base Workstation, Hardware, AppImages, GOA, Security, & Dev Tooling
 RUN apt-get update && apt-get install -y --no-install-recommends \
