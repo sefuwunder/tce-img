@@ -20,6 +20,8 @@ RUN git clone https://github.com/bootc-dev/bootc.git . \
 # ---- Stage 2: the workstation image ----
 FROM docker.io/library/ubuntu:questing
 
+ENV DEBIAN_FRONTEND=noninteractive
+
 USER root
 
 # 0. Boot stack for bootc: kernel, bootloader, initramfs tools, fs tools.
@@ -30,6 +32,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
         systemd-boot \
         dracut \
         btrfs-progs xfsprogs dosfstools e2fsprogs \
+        grub-efi-amd64-bin grub-efi-amd64-signed shim-signed grub-common grub-pc-bin \
     && apt-get clean && rm -rf /var/lib/apt/lists/* \
     && cp /boot/vmlinuz-* "$(find /usr/lib/modules -maxdepth 1 -type d | tail -n 1)/vmlinuz"
 
@@ -126,3 +129,16 @@ RUN rkhunter --propupd || true
 LABEL containers.bootc=1
 LABEL org.opencontainers.image.title="The Coding Exec Ubuntu Workstation" \
       org.opencontainers.image.description="Bootc image tuned for executive productivity, Wi-Fi, AppImages, secure auditing, Firefox, and containerized coding."
+
+# 9. ISO prerequisites for bootc-image-builder (bootc-generic-iso contract).
+#    Must run after the ostree conversion (step 6), which wipes /boot.
+#    The builder reads kernel + initramfs from /usr/lib/modules/<ver>/,
+#    detects the UEFI vendor from /usr/lib/efi/shim/*/EFI/<vendor>,
+#    and takes the ISO label + GRUB entries from iso.yaml.
+RUN mkdir -p /boot/efi/EFI/ubuntu /usr/lib/efi/shim/x64/EFI /usr/lib/image-builder/bootc \
+    && cp /usr/lib/shim/shimx64.efi.signed /boot/efi/EFI/ubuntu/shimx64.efi \
+    && cp /usr/lib/shim/mmx64.efi.signed /boot/efi/EFI/ubuntu/mmx64.efi \
+    && cp /usr/lib/grub/x86_64-efi-signed/grubx64.efi.signed /boot/efi/EFI/ubuntu/grubx64.efi \
+    && cp -r /boot/efi/EFI/. /usr/lib/efi/shim/x64/EFI/ \
+    && printf 'label: "TCE_WORKSTATION"\ngrub2:\n  entries:\n    - name: "Install The Coding Exec Workstation"\n      linux: "/images/pxeboot/vmlinuz root=live:CDLABEL=TCE_WORKSTATION ro console=tty0"\n      initrd: "/images/pxeboot/initrd.img"\n' \
+        > /usr/lib/image-builder/bootc/iso.yaml
