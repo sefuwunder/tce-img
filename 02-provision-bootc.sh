@@ -2,7 +2,7 @@
 # 02-provision-bootc.sh
 set -euo pipefail
 
-IMAGE_REF="${1:-quay.io/codingexec/ubuntu-workstation:latest}"
+IMAGE_REF="${1:-ghcr.io/sefuwunder/tce-img:latest}"
 
 if [ "$EUID" -ne 0 ]; then
   echo "[-] Error: Please run as root (sudo)." >&2
