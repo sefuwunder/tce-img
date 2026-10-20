@@ -136,9 +136,10 @@ LABEL org.opencontainers.image.title="The Coding Exec Ubuntu Workstation" \
 #    detects the UEFI vendor from /usr/lib/efi/shim/*/EFI/<vendor>,
 #    and takes the ISO label + GRUB entries from iso.yaml.
 RUN mkdir -p /boot/efi/EFI/ubuntu /usr/lib/efi/shim/x64/EFI /usr/lib/image-builder/bootc \
-    && cp /usr/lib/shim/shimx64.efi.signed /boot/efi/EFI/ubuntu/shimx64.efi \
-    && cp /usr/lib/shim/mmx64.efi.signed /boot/efi/EFI/ubuntu/mmx64.efi \
+    && cp /usr/lib/shim/shimx64.efi /boot/efi/EFI/ubuntu/shimx64.efi \
+    && cp /usr/lib/shim/mmx64.efi /boot/efi/EFI/ubuntu/mmx64.efi \
     && cp /usr/lib/grub/x86_64-efi-signed/grubx64.efi.signed /boot/efi/EFI/ubuntu/grubx64.efi \
+    && cp /usr/lib/grub/x86_64-efi-signed/gcdx64.efi.signed /boot/efi/EFI/ubuntu/gcdx64.efi \
     && cp -r /boot/efi/EFI/. /usr/lib/efi/shim/x64/EFI/ \
     && printf 'label: "TCE_WORKSTATION"\ngrub2:\n  entries:\n    - name: "Install The Coding Exec Workstation"\n      linux: "/images/pxeboot/vmlinuz root=live:CDLABEL=TCE_WORKSTATION ro console=tty0"\n      initrd: "/images/pxeboot/initrd.img"\n' \
         > /usr/lib/image-builder/bootc/iso.yaml
