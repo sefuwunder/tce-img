@@ -41,9 +41,9 @@ COPY --from=bootc-builder /output /
 
 # bootc install config: default root filesystem type. bootc-image-builder
 # and `bootc install to-disk` refuse to guess it (BIB aborts with
-# "missing required info: DefaultRootFs" without it). xfs, chosen 2026-10-20.
+# "missing required info: DefaultRootFs" without it). btrfs, chosen 2026-10-20.
 RUN mkdir -p /usr/lib/bootc/install \
-    && printf '[install.filesystem.root]\ntype = "xfs"\n' > /usr/lib/bootc/install/10-tce.toml
+    && printf '[install.filesystem.root]\ntype = "btrfs"\n' > /usr/lib/bootc/install/10-tce.toml
 
 # 1. Base Workstation, Hardware, AppImages, GOA, Security, & Dev Tooling
 RUN apt-get update && apt-get install -y --no-install-recommends \
