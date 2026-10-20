@@ -10,6 +10,8 @@ bootc module, ostree/composefs layout).
 
 **Image:** `ghcr.io/sefuwunder/tce-img:latest` (also tagged `sha-<commit>` per build)
 
+For the full operator's walkthrough — architecture, migration phases, bare-metal ISO install — see [GUIDE.md](GUIDE.md).
+
 ## What's inside
 
 | Area | Contents |
