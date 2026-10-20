@@ -125,9 +125,9 @@ jobs:
             -v ./output:/output \
             -v /var/lib/containers/storage:/var/lib/containers/storage \
             quay.io/centos-bootc/bootc-image-builder:latest \
-            --type bootc-generic-iso \
+            --type bootc-installer \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
-          sudo mv output/bootiso/install.iso output/tce-workstation-installer.iso
+          sudo mv output/bootiso/*.iso output/tce-workstation-installer.iso
 
       # 4. Upload the ISO as a workflow artifact
       - name: Upload ISO
