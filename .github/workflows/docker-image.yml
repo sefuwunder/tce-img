@@ -75,9 +75,64 @@ jobs:
             bootc container lint
 
       # 7. Tag and push all tags to GHCR
+      #    (meta.outputs.tags is newline-separated — read it line by line;
+      #     a `for tag in ${{ ... }}` loop splits on the newline and dies
+      #     with a bash syntax error before pushing anything)
       - name: Push Container Image
         run: |
-          for tag in ${{ steps.meta.outputs.tags }}; do
+          while IFS= read -r tag; do
+            [ -z "$tag" ] && continue
             podman tag ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest "$tag"
             podman push "$tag"
-          done
+          done <<< "${{ steps.meta.outputs.tags }}"
+
+  # Build the bare-metal installer ISO from the just-pushed image.
+  # Skipped on the nightly schedule (the ISO only changes when the
+  # Containerfile or this workflow does).
+  build-iso:
+    name: Build Installer ISO
+    needs: build-and-push
+    if: github.event_name != 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+
+    steps:
+      # 1. Install Podman (bootc-image-builder runs as a container)
+      - name: Install Podman
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y podman
+          podman --version
+
+      # 2. Log in and pull the published image into rootful storage —
+      #    the same /var/lib/containers/storage bootc-image-builder
+      #    mounts below, so it finds the image locally (no anonymous
+      #    pull, which would fail while the package is still private)
+      - name: Pull the published image
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" | sudo podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
+          sudo podman pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+
+      # 3. Build the ISO (live environment; install from it with
+      #    `sudo bootc install to-disk /dev/sdX`)
+      - name: Build ISO with bootc-image-builder
+        run: |
+          mkdir -p output
+          sudo podman run --rm --privileged \
+            --pull=newer \
+            -v ./output:/output \
+            -v /var/lib/containers/storage:/var/lib/containers/storage \
+            quay.io/centos-bootc/bootc-image-builder:latest \
+            --type bootc-generic-iso \
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
+          sudo mv output/bootiso/install.iso output/tce-workstation-installer.iso
+
+      # 4. Upload the ISO as a workflow artifact
+      - name: Upload ISO
+        uses: actions/upload-artifact@v4
+        with:
+          name: tce-workstation-installer-iso
+          path: output/tce-workstation-installer.iso
+          if-no-files-found: error
