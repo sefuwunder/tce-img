@@ -359,7 +359,7 @@ echo "=================================================================="
 ## Phase 5: Bare-Metal Deployment via Installer ISO
 
 Every push to `main` (and manual workflow runs) builds a bootable installer ISO
-with bootc-image-builder (`bootc-generic-iso`) from the just-published image.
+with bootc-image-builder (`bootc-installer`) from the just-published image.
 (Skipped on the nightly schedule run.)
 
 1. **Download** the `tce-workstation-installer-iso` artifact from the Actions run.
