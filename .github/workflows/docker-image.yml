@@ -126,6 +126,7 @@ jobs:
             -v /var/lib/containers/storage:/var/lib/containers/storage \
             quay.io/centos-bootc/bootc-image-builder:latest \
             --type bootc-installer \
+            --installer-payload-ref ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           sudo mv output/bootiso/*.iso output/tce-workstation-installer.iso
 
