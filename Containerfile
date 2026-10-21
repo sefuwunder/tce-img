@@ -27,11 +27,16 @@ USER root
 # 0. Boot stack for bootc: kernel, bootloader, initramfs tools, fs tools.
 #    The kernel is copied into the versioned modules dir (where bootc expects it)
 #    because /boot is removed during the ostree conversion at the end.
+#    ostree/fdisk/skopeo: bootc and bootc-image-builder's tooling execute inside
+#    the image's own userland (osbuild's image-pipeline stages run sfdisk/mkfs
+#    there; bootc's installer spawns skopeo and its selinux stage labels
+#    /usr/bin/ostree), so these must be in the image, not just the builder.
 RUN apt-get update && apt-get install -y --no-install-recommends \
         linux-image-generic \
         systemd-boot \
         dracut \
         btrfs-progs xfsprogs dosfstools e2fsprogs \
+        ostree fdisk skopeo \
         grub-efi-amd64-bin grub-efi-amd64-signed shim-signed grub-common grub-pc-bin \
     && apt-get clean && rm -rf /var/lib/apt/lists/* \
     && cp /boot/vmlinuz-* "$(find /usr/lib/modules -maxdepth 1 -type d | tail -n 1)/vmlinuz"
@@ -44,6 +49,16 @@ COPY --from=bootc-builder /output /
 # "missing required info: DefaultRootFs" without it). btrfs, chosen 2026-10-20.
 RUN mkdir -p /usr/lib/bootc/install \
     && printf '[install.filesystem.root]\ntype = "btrfs"\n' > /usr/lib/bootc/install/10-tce.toml
+
+# osbuild compatibility shim: bootc-image-builder's generated manifest hardcodes
+# an org.osbuild.selinux stage that relabels the tree using
+# etc/selinux/targeted/contexts/files/file_contexts plus three explicit path
+# labels (/usr/bin/mount, /usr/bin/ostree, /usr/bin/umount). This image uses
+# AppArmor, not SELinux, so the contexts file is intentionally empty: setfiles
+# labels nothing and the stage is a no-op.
+RUN mkdir -p /etc/selinux/targeted/contexts/files \
+    && touch /etc/selinux/targeted/contexts/files/file_contexts \
+    && touch /etc/selinux/targeted/contexts/files/file_contexts.local
 
 # 1. Base Workstation, Hardware, AppImages, GOA, Security, & Dev Tooling
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -112,6 +127,10 @@ RUN mkdir -p /usr/lib/dracut/dracut.conf.d/ \
 
 # 6. Convert to ostree/bootc layout. LAST: it wipes /var, so the rkhunter
 #    baseline below is best-effort (re-run propupd on first boot).
+#    composefs stays OFF: questing's libostree ships without composefs support
+#    compiled in, so enabled=yes could never execute here (bootc install and
+#    boot both fail). Classic ostree checkouts instead; revisit if Ubuntu's
+#    ostree gains composefs support.
 RUN rm -rf /boot /home /root /usr/local /srv /opt /mnt /var \
     && mkdir -p /sysroot /boot /usr/lib/ostree /var \
     && ln -sT sysroot/ostree /ostree \
@@ -125,7 +144,7 @@ RUN rm -rf /boot /home /root /usr/local /srv /opt /mnt /var \
         >> /usr/lib/tmpfiles.d/bootc-base-dirs.conf \
     && printf 'd /var/roothome 0700 root root -\nd /run/media 0755 root root -\n' \
         >> /usr/lib/tmpfiles.d/bootc-base-dirs.conf \
-    && printf '[composefs]\nenabled = yes\n[sysroot]\nreadonly = true\n' \
+    && printf '[composefs]\nenabled = no\n[sysroot]\nreadonly = true\n' \
         > /usr/lib/ostree/prepare-root.conf
 
 # 7. Initialize rkhunter baseline (best-effort: /var is provisioned at install)
@@ -136,7 +155,7 @@ LABEL containers.bootc=1
 LABEL org.opencontainers.image.title="The Coding Exec Ubuntu Workstation" \
       org.opencontainers.image.description="Bootc image tuned for executive productivity, Wi-Fi, AppImages, secure auditing, Firefox, and containerized coding."
 
-# 9. ISO prerequisites for bootc-image-builder (bootc-generic-iso contract).
+# 9. ISO prerequisites for bootc-image-builder (bootc-installer contract).
 #    Must run after the ostree conversion (step 6), which wipes /boot.
 #    The builder reads kernel + initramfs from /usr/lib/modules/<ver>/,
 #    detects the UEFI vendor from /usr/lib/efi/shim/*/EFI/<vendor>,

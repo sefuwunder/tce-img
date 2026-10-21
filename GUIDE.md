@@ -176,7 +176,7 @@ RUN rm -rf /boot /home /root /usr/local /srv /opt /mnt /var \
         >> /usr/lib/tmpfiles.d/bootc-base-dirs.conf \
     && printf 'd /var/roothome 0700 root root -\nd /run/media 0755 root root -\n' \
         >> /usr/lib/tmpfiles.d/bootc-base-dirs.conf \
-    && printf '[composefs]\nenabled = yes\n[sysroot]\nreadonly = true\n' \
+    && printf '[composefs]\nenabled = no\n[sysroot]\nreadonly = true\n' \
         > /usr/lib/ostree/prepare-root.conf
 
 # 7. Initialize rkhunter baseline (best-effort: /var is provisioned at install)
@@ -312,8 +312,10 @@ Before touching bare metal, build a VM disk image and boot it in QEMU/KVM.
 ## Phase 4: In-Place System Transition
 
 `02-provision-bootc.sh` converts the running machine to the bootc image
-(must run as root). It pulls the image, enables composefs filesystem features
-best-effort, and runs `bootc install to-existing-root` — `/home` and user state
+(must run as root). It pulls the image, best-effort prepares the backing
+filesystem for composefs/fs-verity (the image itself currently ships with
+composefs disabled — questing's libostree has no composefs support compiled
+in), and runs `bootc install to-existing-root` — `/home` and user state
 survive; reboot into the immutable environment afterwards.
 
 ```bash
