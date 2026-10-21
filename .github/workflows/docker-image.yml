@@ -115,7 +115,34 @@ jobs:
           echo "${{ secrets.GITHUB_TOKEN }}" | sudo podman login ${{ env.REGISTRY }} -u ${{ github.actor }} --password-stdin
           sudo podman pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
 
-      # 3. Build the ISO (live environment; install from it with
+      # 3. Debug: reproduce the anaconda-tree mount failure outside BIB.
+      #    The failing stage runs the IMAGE's podman against this storage;
+      #    this performs the identical mount here to see which side breaks.
+      #    (Temporary instrumentation - remove once the ISO builds.)
+      - name: Debug podman storage before BIB
+        run: |
+          echo "== runner podman =="
+          sudo podman --version
+          sudo podman info --format 'driver={{.Store.GraphDriverName}} graphroot={{.Store.GraphRoot}}'
+          IMG_ID=$(sudo podman images -q ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest | head -1)
+          echo "image id: $IMG_ID"
+          echo "== runner podman mount =="
+          sudo podman image mount "$IMG_ID"
+          sudo podman image umount "$IMG_ID"
+          echo "== image podman mount from runner storage =="
+          MNT=$(sudo podman run --rm --privileged \
+            -v /var/lib/containers/storage:/var/lib/containers/storage \
+            --entrypoint /usr/bin/podman ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            --root /var/lib/containers/storage image mount "$IMG_ID")
+          echo "mounted at: $MNT"
+          sudo podman run --rm --privileged \
+            -v /var/lib/containers/storage:/var/lib/containers/storage \
+            --entrypoint /usr/bin/podman ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest \
+            --root /var/lib/containers/storage image umount "$IMG_ID"
+          echo "== image podman version =="
+          sudo podman run --rm --entrypoint /usr/bin/podman ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest --version
+
+      # 4. Build the ISO (live environment; install from it with
       #    `sudo bootc install to-disk /dev/sdX`)
       - name: Build ISO with bootc-image-builder
         run: |
@@ -130,7 +157,7 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
           sudo mv output/bootiso/*.iso output/tce-workstation-installer.iso
 
-      # 4. Upload the ISO as a workflow artifact
+      # 5. Upload the ISO as a workflow artifact
       - name: Upload ISO
         uses: actions/upload-artifact@v4
         with:
